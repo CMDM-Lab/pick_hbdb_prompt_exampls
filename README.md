@@ -1,4 +1,4 @@
-# hbdb2 construct context
+# hbdb construct context
 
 ## First step
 Download the `hbdb2.sql`
