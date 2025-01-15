@@ -38,7 +38,7 @@ python sql.py --compound_id 28
 ```
 
 ## Results
-The results will be stored in a directory named after the compound name.
+The results will be stored in a directory named after the compound name. It will include all concepts related to the compound.
 
 The JSON files will follow this naming format:
 ```bash
