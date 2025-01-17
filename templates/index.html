@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>HBDB Compound Search</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container { margin-top: 2rem; }
+        .result-card { margin-bottom: 1rem; }
+        .context { white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+        <h1>HBDB Compound Search</h1>
+        
+        <form method="POST" class="form-inline mb-4">
+            <div class="form-group mx-sm-3 mb-2">
+                <label for="compound_id" class="sr-only">Compound ID</label>
+                <input type="number" class="form-control" id="compound_id" name="compound_id" placeholder="Enter Compound ID" required>
+            </div>
+            <button type="submit" class="btn btn-primary mb-2">Search</button>
+        </form>
+
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        {% if data %}
+        <h2>Results for: {{ data.compound_name }}</h2>
+        
+        {% for result in data.results %}
+        <div class="card result-card">
+            <div class="card-header">
+                <strong>Category:</strong> {{ result.category }}
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ result.term_A }} - {{ result.term_B }}</h5>
+                <p class="card-text context">{{ result.context }}</p>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if not data.results %}
+        <div class="alert alert-info" role="alert">
+            No results found for this compound.
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

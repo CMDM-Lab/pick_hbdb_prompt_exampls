@@ -8,10 +8,12 @@ parser.add_argument('--compound_id', type=int, required=True, help='The id of th
 args = parser.parse_args()
 
 # your hbdb2.sql settings
-connection = mysql.connector.connect(host='localhost',
-                                    port='3306',
-                                    user='root',
-                                    password='XXXXXXXX')
+connection = mysql.connector.connect(
+    host=os.getenv('MYSQL_HOST', 'localhost'),
+    port=os.getenv('MYSQL_PORT', '3306'),
+    user=os.getenv('MYSQL_USER', 'root'),
+    password=os.getenv('MYSQL_PASSWORD', 'XXXXXXXX')
+)
 cursor = connection.cursor()
 
 # Use `<put your database_name>`
