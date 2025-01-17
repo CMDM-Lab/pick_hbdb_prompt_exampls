@@ -32,3 +32,4 @@ var/
 *.swp
 *.swo 
 */concept_*_metadata/*/*.json
+hbdb2.sql

@@ -1,55 +1,120 @@
-# hbdb construct context
+# HBDB Compound Search
 
-## First step
-Download the `hbdb2.sql`
+A Flask web application for searching and analyzing compound relationships in the HBDB database.
 
-## Environment Setup
-Create a new conda environment
+## Prerequisites
+
+- Python 3.10
+- Docker and Docker Compose
+- MySQL 8.0
+
+## Quick Start with Docker
+
+1. Clone the repository
+
+2. Create a `.env` file in the root directory with the following variables:
 ```bash
-conda create --name hbdb_env python=3.10
-```
-Activate the conda environment
-```bash
-conda activate hbdb_env
-```
-Install necessary package
-```bash
-pip insall mysql-connector-python==9.1.0
-```
-
-## Modify `sql.py` to match your dataset format
-Replace the following line in the script with your own MySQL settings:
-```bash
-connection = mysql.connector.connect(host='localhost', port='3306',user='root'password='XXXXXXXX')
-```
-Ensure the host, port, user, and password match your database configuration.
-
-- host: The hostname or IP address of your MySQL server.
-- port: The port number your MySQL server listens on (default is 3306).
-- user: Your MySQL username.
-- password: Your MySQL password (replace XXXXXXXX with the actual password).
-
-## Construct context
-Run the `sql.py` script with the specified `compound_id` parameter.
-
-As an example, using compound "acetone," replace 28 with the desired compound ID to fetch data from the database:
-```bash
-python sql.py --compound_id 28
+MYSQL_HOST=mysql
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_ROOT_PASSWORD=your_password
+MYSQL_DATABASE=hbdb2
 ```
 
-## Results
-The results will be stored in a directory named after the compound name. It will include all concepts related to the compound.
+3. Place your `hbdb2.sql` file in the root directory
 
-The JSON files will follow this naming format:
+4. Build and run the containers:
 ```bash
-{term_A}_{term_B}_{paragraph}.json
+docker-compose up --build
 ```
 
-Each JSON file will have the following structure:
+The application will be available at `http://localhost:5020`
+
+## Manual Setup
+
+1. Create a Python virtual environment:
 ```bash
-{
-    "term_A": "value of term A",
-    "term_B": "value of term B",
-    "context": "surrounding text including the target sentence"
-}
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
 ```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Configure MySQL:
+- Install MySQL 8.0
+- Create a database named `hbdb2`
+- Import the `hbdb2.sql` file
+
+4. Set up environment variables:
+- Create a `.env` file with the same variables as shown in the Docker setup
+- Adjust MYSQL_HOST to `localhost` for local development
+
+5. Run the application:
+```bash
+python app.py
+```
+
+## Usage
+
+1. Access the web interface at `http://localhost:5020`
+2. Enter a compound ID in the search form
+3. View the results showing:
+   - Compound name
+   - Related terms
+   - Context information
+   - Category classifications
+
+## Downloading Results
+
+The application generates JSON files for each compound-concept relationship. These files are stored in the following structure:
+
+```
+{compound_name}/
+    ├── concept_abnormality_metadata/
+    ├── concept_chemical_metadata/
+    ├── concept_molecular function_metadata/
+    ├── concept_gene_metadata/
+    ├── concept_location_metadata/
+    └── concept_animal model_metadata/
+```
+
+Each JSON file follows the naming format:
+```
+{compound_name}_{term_B}_{paragraph}.json
+```
+
+To download the JSON files:
+
+1. After searching for a compound, the files will be generated in the appropriate directories
+2. Access the files directly from the project directory
+3. Each JSON file contains:
+   ```json
+   {
+       "term_A": "compound name",
+       "term_B": "related concept",
+       "context": "surrounding text including the target sentence",
+       "category": "concept category"
+   }
+   ```
+
+## Project Structure
+
+- `app.py`: Main Flask application
+- `templates/`: HTML templates
+- `docker-compose.yml`: Docker services configuration
+- `Dockerfile`: Web application container configuration
+- `requirements.txt`: Python dependencies
+- `.env`: Environment variables (create this)
+- `hbdb2.sql`: Database schema and data (provide this)
+
+## Environment Variables
+
+- `MYSQL_HOST`: MySQL server hostname
+- `MYSQL_PORT`: MySQL server port
+- `MYSQL_USER`: MySQL username
+- `MYSQL_ROOT_PASSWORD`: MySQL root password
+- `MYSQL_DATABASE`: Database name (hbdb2)

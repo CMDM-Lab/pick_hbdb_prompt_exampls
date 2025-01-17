@@ -80,7 +80,14 @@ def process_compound_data(compound_id):
                     "term_A": compound_name,
                     "term_B": term_b,
                     "context": context,
-                    "category": tables_dir_name[idx]
+                    "category": tables_dir_name[idx],
+                    "score": None,  # Default score
+                    "verified": False,  # Default verification status
+                    "table": table,
+                    "compound_id": compound_id,
+                    "concept_id": concept_id,
+                    "reference_id": reference_id,
+                    "paragraph": paragraph
                 }
                 
                 # Save to file
@@ -117,6 +124,76 @@ def index():
             error = f"An error occurred: {str(e)}"
     
     return render_template('index.html', data=data, error=error)
+
+@app.route('/update_score', methods=['POST'])
+def update_score():
+    try:
+        data = request.json
+        compound_name = data['compound_name']
+        term_b = data['term_b']
+        category = data['category']
+        reference_id = data['reference_id']
+        paragraph = data['paragraph']
+        score = data['score']
+        verified = data['verified']
+        
+        # Construct the file path
+        file_path = f"{compound_name}/{category}/{reference_id}/{compound_name}_{term_b}_{paragraph}.json"
+        
+        # Read existing JSON
+        with open(file_path, 'r') as file:
+            json_data = json.load(file)
+        
+        # Update score and verification
+        json_data['score'] = score
+        json_data['verified'] = verified
+        
+        # Save updated JSON
+        with open(file_path, 'w') as file:
+            json.dump(json_data, file, indent=4)
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/list_files', methods=['GET'])
+def list_files():
+    try:
+        compounds = [d for d in os.listdir('.') if os.path.isdir(d) and not d.startswith('.')]
+        all_files = []
+        
+        for compound in compounds:
+            for category in os.listdir(compound):
+                category_path = os.path.join(compound, category)
+                if os.path.isdir(category_path):
+                    for ref_id in os.listdir(category_path):
+                        ref_path = os.path.join(category_path, ref_id)
+                        if os.path.isdir(ref_path):
+                            for file in os.listdir(ref_path):
+                                if file.endswith('.json'):
+                                    file_path = os.path.join(ref_path, file)
+                                    with open(file_path, 'r') as f:
+                                        data = json.load(f)
+                                        # Extract paragraph name from filename
+                                        paragraph_name = file.split('_')[-1].replace('.json', '')
+
+                                        file_info = {
+                                            'path': file_path,
+                                            'compound': compound,
+                                            'category': category,
+                                            'reference_id': ref_id,
+                                            'term_A': data.get('term_A', ''),
+                                            'term_B': data.get('term_B', ''),
+                                            'context': data.get('context', ''),
+                                            'score': data.get('score'),
+                                            'verified': data.get('verified', False),
+                                            'paragraph': paragraph_name  # Use the extracted paragraph name
+                                        }
+                                        all_files.append(file_info)
+        
+        return render_template('list_files.html', files=all_files)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5020, debug=True) 

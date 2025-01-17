@@ -11,11 +11,22 @@
         .container { margin-top: 2rem; }
         .result-card { margin-bottom: 1rem; }
         .context { white-space: pre-wrap; }
+        .scoring-guide { 
+            cursor: help;
+            margin-left: 0.5rem;
+            color: #6c757d;
+        }
+        .tooltip-inner {
+            max-width: 400px;
+            text-align: left;
+            white-space: pre-wrap;
+        }
     </style>
   </head>
   <body>
     <div class="container">
         <h1>HBDB Compound Search</h1>
+        <a href="/list_files" class="btn btn-secondary mb-3">View All Generated Files</a>
         
         <form method="POST" class="form-inline mb-4">
             <div class="form-group mx-sm-3 mb-2">
@@ -40,8 +51,45 @@
                 <strong>Category:</strong> {{ result.category }}
             </div>
             <div class="card-body">
-                <h5 class="card-title">{{ result.term_A }} - {{ result.term_B }}</h5>
+                <h5 class="card-title">
+                    {{ result.term_A }} - {{ result.term_B }}
+                    <i class="bi bi-question-circle scoring-guide" 
+                       data-bs-toggle="tooltip" 
+                       data-bs-html="true"
+                       title="5分: 有明確指出或直接證據說明兩個生物名詞之間有重要相關性，像是有解釋致病機轉&#13;&#10;4分: 有證據暗示兩個生物名詞之間有相關性，像是樣品中有測到，且具有統計顯著差異，但沒有說明致病機轉&#13;&#10;3分: 有間接證據說明兩個生物名詞之間有相關，像是在樣品中測到，但沒有統計顯著差異。&#13;&#10;2分: 有間接證據說明兩個生物名稱之間有部分相關性，像是都是有機溶劑&#13;&#10;1分: 無相關性，只是剛好出現在同一個句子，像是在同一間公司購買">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                            <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
+                        </svg>
+                    </i>
+                </h5>
                 <p class="card-text context">{{ result.context }}</p>
+                <div class="scoring-section mt-3">
+                    <div class="form-group">
+                        <label>Quality Score (1-5):</label>
+                        <select class="form-control score-select" 
+                                data-compound-name="{{ result.term_A }}"
+                                data-term-b="{{ result.term_B }}"
+                                data-category="{{ result.category }}"
+                                data-reference-id="{{ result.reference_id }}"
+                                data-paragraph="{{ result.paragraph }}">
+                            <option value="">Select score...</option>
+                            {% for i in range(1, 6) %}
+                            <option value="{{ i }}" {% if result.score == i %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-check mt-2">
+                        <input type="checkbox" class="form-check-input verify-check"
+                               {% if result.verified %}checked{% endif %}
+                               data-compound-name="{{ result.term_A }}"
+                               data-term-b="{{ result.term_B }}"
+                               data-category="{{ result.category }}"
+                               data-reference-id="{{ result.reference_id }}"
+                               data-paragraph="{{ result.paragraph }}">
+                        <label class="form-check-label">Verified</label>
+                    </div>
+                </div>
             </div>
         </div>
         {% endfor %}
@@ -55,5 +103,64 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function updateScore(element, score, verified) {
+            const data = {
+                compound_name: element.dataset.compoundName,
+                term_b: element.dataset.termB,
+                category: element.dataset.category,
+                reference_id: element.dataset.referenceId,
+                paragraph: element.dataset.paragraph,
+                score: score,
+                verified: verified
+            };
+
+            fetch('/update_score', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const toast = document.createElement('div');
+                    toast.className = 'alert alert-success position-fixed bottom-0 end-0 m-3';
+                    toast.style.zIndex = '1050';
+                    toast.textContent = 'Score saved successfully!';
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 2000);
+                } else {
+                    alert('Error updating score: ' + data.error);
+                }
+            });
+        }
+
+        document.querySelectorAll('.score-select').forEach(select => {
+            select.addEventListener('change', function() {
+                const verified = this.closest('.scoring-section')
+                                   .querySelector('.verify-check').checked;
+                updateScore(this, this.value, verified);
+            });
+        });
+
+        document.querySelectorAll('.verify-check').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const score = this.closest('.scoring-section')
+                                 .querySelector('.score-select').value;
+                updateScore(this, score, this.checked);
+            });
+        });
+    });
+
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            boundary: 'window'
+        })
+    })
+    </script>
   </body>
 </html>
