@@ -185,9 +185,9 @@ def list_files():
                                             'term_A': data.get('term_A', ''),
                                             'term_B': data.get('term_B', ''),
                                             'context': data.get('context', ''),
-                                            'score': data.get('score'),
+                                            'score': int(data.get('score')) if data.get('score') else None,  # Convert to integer
                                             'verified': data.get('verified', False),
-                                            'paragraph': paragraph_name  # Use the extracted paragraph name
+                                            'paragraph': paragraph_name
                                         }
                                         all_files.append(file_info)
         

@@ -54,6 +54,11 @@
                                 <span class="badge bg-info ms-2">Section: {{ file.paragraph }}</span>
                             </div>
                         </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <strong>File:</strong> <code>{{ file.path }}</code>
+                            </small>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="paragraph-info">Paragraph: {{ file.paragraph }}</div>
@@ -146,13 +151,11 @@
             });
         });
     });
-    </script>
 
-    <script>
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl, {
-                boundary: 'window'
-            })
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            boundary: 'window'
         })
+    })
     </script>
