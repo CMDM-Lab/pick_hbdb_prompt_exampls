@@ -165,6 +165,7 @@ def list_files():
         terms_a = set()
         verified_count = 0
         scored_count = 0
+        score_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}  # Initialize score counts
         
         for compound in compounds:
             for category in os.listdir(compound):
@@ -179,7 +180,9 @@ def list_files():
                                     with open(file_path, 'r') as f:
                                         data = json.load(f)
                                         if data.get('score'):
+                                            score = int(data.get('score'))
                                             scored_count += 1
+                                            score_counts[score] += 1
                                         if data.get('verified'):
                                             verified_count += 1
                                         # Extract paragraph name from filename
@@ -207,7 +210,8 @@ def list_files():
                              terms_a=sorted(terms_a),
                              verified_count=verified_count,
                              scored_count=scored_count,
-                             total_count=len(all_files))
+                             total_count=len(all_files),
+                             score_counts=score_counts)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
