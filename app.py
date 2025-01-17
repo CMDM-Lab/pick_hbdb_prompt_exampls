@@ -156,11 +156,15 @@ def update_score():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
-@app.route('/list_files', methods=['GET'])
+@app.route('/list_files')
 def list_files():
     try:
         compounds = [d for d in os.listdir('.') if os.path.isdir(d) and not d.startswith('.')]
         all_files = []
+        sections = set()
+        terms_a = set()
+        verified_count = 0
+        scored_count = 0
         
         for compound in compounds:
             for category in os.listdir(compound):
@@ -174,6 +178,10 @@ def list_files():
                                     file_path = os.path.join(ref_path, file)
                                     with open(file_path, 'r') as f:
                                         data = json.load(f)
+                                        if data.get('score'):
+                                            scored_count += 1
+                                        if data.get('verified'):
+                                            verified_count += 1
                                         # Extract paragraph name from filename
                                         paragraph_name = file.split('_')[-1].replace('.json', '')
 
@@ -190,8 +198,99 @@ def list_files():
                                             'paragraph': paragraph_name
                                         }
                                         all_files.append(file_info)
+                                        sections.add(file_info['paragraph'])
+                                        terms_a.add(file_info['term_A'])
         
-        return render_template('list_files.html', files=all_files)
+        return render_template('list_files.html', 
+                             files=all_files,
+                             sections=sorted(sections),
+                             terms_a=sorted(terms_a),
+                             verified_count=verified_count,
+                             scored_count=scored_count,
+                             total_count=len(all_files))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/needs_verification', methods=['GET'])
+def needs_verification():
+    try:
+        # Get all compound directories
+        compounds = [d for d in os.listdir('.') if os.path.isdir(d) and not d.startswith('.')]
+        files_to_verify = []
+        
+        for compound in compounds:
+            for category in os.listdir(compound):
+                category_path = os.path.join(compound, category)
+                if os.path.isdir(category_path):
+                    for ref_id in os.listdir(category_path):
+                        ref_path = os.path.join(category_path, ref_id)
+                        if os.path.isdir(ref_path):
+                            for file in os.listdir(ref_path):
+                                if file.endswith('.json'):
+                                    file_path = os.path.join(ref_path, file)
+                                    with open(file_path, 'r') as f:
+                                        data = json.load(f)
+                                        # Check if file has score but isn't verified
+                                        if data.get('score') and not data.get('verified', False):
+                                            paragraph_name = file.split('_')[-1].replace('.json', '')
+                                            file_info = {
+                                                'path': file_path,
+                                                'compound': compound,
+                                                'category': category,
+                                                'reference_id': ref_id,
+                                                'term_A': data.get('term_A', ''),
+                                                'term_B': data.get('term_B', ''),
+                                                'context': data.get('context', ''),
+                                                'score': int(data.get('score')) if data.get('score') else None,
+                                                'verified': data.get('verified', False),
+                                                'paragraph': paragraph_name
+                                            }
+                                            files_to_verify.append(file_info)
+        
+        return render_template('needs_verification.html', files=files_to_verify)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/download_verified', methods=['GET'])
+def download_verified():
+    try:
+        # Create a BytesIO object to store the zip file
+        memory_file = BytesIO()
+        
+        # Create a ZipFile object
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            compounds = [d for d in os.listdir('.') if os.path.isdir(d) and not d.startswith('.')]
+            
+            for compound in compounds:
+                for category in os.listdir(compound):
+                    category_path = os.path.join(compound, category)
+                    if os.path.isdir(category_path):
+                        for ref_id in os.listdir(category_path):
+                            ref_path = os.path.join(category_path, ref_id)
+                            if os.path.isdir(ref_path):
+                                for file in os.listdir(ref_path):
+                                    if file.endswith('.json'):
+                                        file_path = os.path.join(ref_path, file)
+                                        with open(file_path, 'r') as f:
+                                            data = json.load(f)
+                                            # Check if file has score and is verified
+                                            if data.get('score') and data.get('verified', False):
+                                                # Add file to zip with its relative path
+                                                zf.write(file_path, os.path.join(compound, category, ref_id, file))
+        
+        # Reset the file pointer
+        memory_file.seek(0)
+        
+        # Generate timestamp for filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        return send_file(
+            memory_file,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=f'verified_files_{timestamp}.zip'
+        )
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
